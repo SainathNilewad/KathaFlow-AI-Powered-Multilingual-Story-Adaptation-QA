@@ -1,0 +1,22 @@
+# Python bytecode and caches
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+
+# Environment and secrets
+.env
+.env.local
+*.env
+
+# Local session and debug logs
+logs/
+*.log
+
+# Streamlit local state
+.streamlit/secrets.toml
+
+# Evaluation results and temporary keys
+eval/results/*.json
+eval/results/*.csv
+!eval/results/.gitkeep

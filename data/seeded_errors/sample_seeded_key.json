@@ -1,0 +1,33 @@
+{
+  "language_pair": "hindi_to_hinglish",
+  "source_text": "विक्रम: पापाजी, मैं आज रात ११:३० की ट्रेन से मुंबई निकल रहा हूँ। पूरे १० लाख रुपये दांव पर लगे हैं।",
+  "adapted_text": "Rahul: Papaji, main aaj raat ki train se Mumbai nikal raha hoon. Saare paise daanv par lage hain.",
+  "glossary_items": [
+    {
+      "term": "विक्रम",
+      "category": "character_name",
+      "target_form": "Vikram",
+      "notes": "Protagonist"
+    },
+    {
+      "term": "पापाजी",
+      "category": "honorific",
+      "target_form": "Papaji",
+      "notes": "Respect marker"
+    }
+  ],
+  "known_errors": [
+    {
+      "id": "ERR_NAME_01",
+      "type": "name_drift",
+      "target_snippet": "Rahul",
+      "description": "Character Vikram was renamed Rahul in the adaptation."
+    },
+    {
+      "id": "ERR_NUM_01",
+      "type": "number_mismatch",
+      "target_snippet": "10",
+      "description": "10 lakh amount was omitted in the adaptation."
+    }
+  ]
+}
