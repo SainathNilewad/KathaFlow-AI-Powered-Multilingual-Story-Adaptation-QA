@@ -2,6 +2,7 @@
 Supports pasting/uploading scripts, interactive glossary editing, chunk-by-chunk adaptation,
 multi-tiered QA review with flag triage, side-by-side baseline comparison, approval, and local audit logging.
 """
+import os
 import sys
 import json
 from pathlib import Path
@@ -94,14 +95,81 @@ if "edited_chunks" not in st.session_state:
 if "approved_state" not in st.session_state:
     st.session_state.approved_state = False
 
-# LLM Client singleton
-client = LLMClient()
-
 # ==========================================
 # SIDEBAR CONTROLS
 # ==========================================
 st.sidebar.title("🎙️ Kuku Localizer")
 st.sidebar.caption("Audio Drama Script Adaptation Workbench")
+
+# 1. Provider & Free LLM Configuration
+with st.sidebar.expander("⚡ LLM Provider & Free API Key", expanded=True):
+    provider_options = {
+        "groq": "Groq (Free: Llama 3.3 70B, Ultra-Fast)",
+        "gemini": "Google Gemini (Free: Gemini 1.5 Flash)",
+        "openrouter": "OpenRouter (Free :free models)",
+        "github": "GitHub Models (Free with GitHub Token)",
+        "openai": "OpenAI (gpt-4o-mini)",
+        "mock": "Offline Mock Mode (No Key Needed)"
+    }
+    
+    current_provider = os.getenv("LLM_PROVIDER", "groq" if os.getenv("GROQ_API_KEY") else ("gemini" if os.getenv("GEMINI_API_KEY") else "mock")).lower()
+    if current_provider not in provider_options:
+        current_provider = "mock"
+        
+    selected_provider = st.selectbox(
+        "Provider",
+        options=list(provider_options.keys()),
+        format_func=lambda x: provider_options[x],
+        index=list(provider_options.keys()).index(current_provider)
+    )
+    
+    default_key = os.getenv(f"{selected_provider.upper()}_API_KEY", os.getenv("LLM_API_KEY", ""))
+    input_key = st.text_input(
+        "API Key",
+        value=st.session_state.get("custom_api_key", default_key),
+        type="password",
+        placeholder="Paste your free key here (gsk_ / AIza...)",
+        help="Free keys: Groq -> console.groq.com | Gemini -> aistudio.google.com"
+    )
+    if input_key:
+        st.session_state.custom_api_key = input_key
+    
+    # Model Override
+    custom_model = st.text_input(
+        "Model Name (Optional)",
+        value=st.session_state.get("custom_model", ""),
+        placeholder="Default: provider recommended"
+    )
+    if custom_model:
+        st.session_state.custom_model = custom_model
+
+    # Helpful links for free keys
+    st.markdown("""
+    <small>
+    <b>Get a 100% Free API Key (No Credit Card):</b><br>
+    - <a href="https://console.groq.com/keys" target="_blank" style="color:#2563EB;">Groq (Instant, 300+ tok/s)</a><br>
+    - <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color:#2563EB;">Google Gemini (DeepMind Indic)</a><br>
+    - <a href="https://openrouter.ai/keys" target="_blank" style="color:#2563EB;">OpenRouter (:free models)</a>
+    </small>
+    """, unsafe_allow_html=True)
+    
+    test_btn = st.button("🧪 Test API Connection", use_container_width=True)
+
+# Instantiate client dynamically based on user selections
+active_key = st.session_state.get("custom_api_key", os.getenv("LLM_API_KEY", ""))
+active_model = st.session_state.get("custom_model") or None
+client = LLMClient(provider=selected_provider, api_key=active_key, model=active_model)
+
+if test_btn:
+    with st.sidebar:
+        with st.spinner("Testing API connection..."):
+            ok, msg = client.test_connection()
+            if ok:
+                st.success(msg)
+            else:
+                st.error(msg)
+
+st.sidebar.markdown("---")
 
 # Language Pair Selector
 available_pairs = list_available_pairs()

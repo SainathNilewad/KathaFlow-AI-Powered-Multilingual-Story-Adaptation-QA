@@ -1,34 +1,30 @@
-# QA Configuration: thresholds and parameters for deterministic and LLM QA checks
+# Deterministic and LLM QA rules and thresholds
 
 deterministic:
   length_ratio:
     min_ratio: 0.45
     max_ratio: 2.20
     severity: "warning"
-    explanation_template: "Adapted chunk length ({ratio:.2f}x source) deviates outside typical bounds (0.45 - 2.20x)."
 
   numbers_and_dates:
-    check_arabic_digits: true
-    check_devanagari_digits: true
-    check_written_numbers: true
     severity: "critical"
-    explanation_template: "Number or date mismatch: Source mentions '{missing_item}', which is not found in the adapted text."
 
   name_consistency:
     severity: "critical"
-    explanation_template: "Character name mismatch: Expected target form '{expected_name}' for source name '{source_name}'."
 
-  untranslated_leakage:
-    # Flag when target language contains unexpected foreign script chunks
-    min_leak_chars: 4
-    severity: "warning"
-    explanation_template: "Potential untranslated text leakage detected in target text: '{leak_snippet}'."
+  leftover_text:
+    different_script:
+      min_consecutive_chars: 4
+      severity: "warning"
+    same_script:
+      # Note: Same-script vocabulary detection is a heuristic and can miss morphological variants.
+      severity: "warning"
+      wordlists:
+        hindi_in_marathi: ["नहीं", "हैं", "था", "थी", "होगा", "कहा", "लेकिन", "अगर", "बहुत"]
+        marathi_in_hindi: ["नाही", "आहे", "होता", "होती", "म्हणाला", "पण", "जर", "खूप"]
 
 llm_check:
   model_temperature: 0.0
   types:
     - "dropped_plot_point"
     - "tone_drift"
-  prompt_focus: >
-    Check if the adaptation dropped critical plot actions, changed character motivations,
-    or drifted significantly in tone (e.g. overly formal, stilted, or unidiomatic).

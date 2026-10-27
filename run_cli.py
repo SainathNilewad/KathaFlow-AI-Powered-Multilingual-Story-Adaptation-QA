@@ -1,6 +1,6 @@
 """CLI runner for Kuku Localization: Runs pipeline and baseline, prints QA flags, and saves outputs.
 Usage:
-    python run_cli.py --file data/samples/hindi_drama_short.txt --pair hindi_to_hinglish
+    python run_cli.py --file data/samples/sample_script.txt --pair hindi_to_hinglish
 """
 import sys
 import argparse
@@ -19,9 +19,9 @@ from src.logger import create_session_id, log_run
 
 def main():
     parser = argparse.ArgumentParser(description="Run Kuku Script Localization and Baseline comparison.")
-    parser.add_argument("--file", "-f", required=True, help="Path to plain text script file")
+    parser.add_argument("--file", "-f", default="data/samples/sample_script.txt", help="Path to plain text script file")
     parser.add_argument("--pair", "-p", default="hindi_to_hinglish", help="Language pair key")
-    parser.add_argument("--output-dir", "-o", default="eval/results", help="Directory to save outputs")
+    parser.add_argument("--output-dir", "-o", default="output", help="Directory to save outputs")
     args = parser.parse_args()
 
     script_path = Path(args.file)
@@ -38,7 +38,7 @@ def main():
 
     print("=" * 60)
     print(f"KUKU LOCALIZATION RUNNER | {pair_cfg.display_name}")
-    print(f"File: {script_path.name} | LLM: {client.provider} (Mock={client.is_mock()})")
+    print(f"File: {script_path.name} | LLM: {client.provider.upper()} (Mock Mode: {client.is_mock()})")
     print("=" * 60)
 
     # 1. Pipeline
@@ -87,6 +87,7 @@ def main():
     if len(pipe_out.flags) > 5:
         print(f"    ... and {len(pipe_out.flags) - 5} more flags.")
     print("=" * 60)
+    print(f"[SUCCESS] Adaptation complete! Outputs saved in {out_dir}/")
 
 
 if __name__ == "__main__":

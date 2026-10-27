@@ -1,52 +1,84 @@
 # Architecture & Design Decisions (DECISIONS.md)
 
-This log documents every architectural choice, deliberate omission, and rationale for this project. The goal is complete clarity and defensibility in an engineering interview for an AI Generalist role.
+This log documents every architectural choice, deliberate omission, and technical rationale for the **Script Localization & Review Workbench**. The goal is complete clarity and defensibility in an engineering interview for an **AI Generalist** role (Kuku AI Labs).
 
 ---
 
-### Decision 1: Direct Thin LLM Client over Frameworks (No LangChain / LlamaIndex)
-- **Choice**: Call LLM endpoints directly via Python `httpx` and standard environment variables (`LLM_PROVIDER`, `LLM_API_KEY`, `LLM_MODEL`).
-- **Why**:
-  - LangChain and LlamaIndex introduce high-abstraction bloat, hidden prompts, fragile version lock-in, and unpredictable overhead for what is fundamentally a structured HTTP request.
-  - A direct client is 100% transparent: every prompt, payload, and retry policy is directly visible and testable.
-  - If a production team moves from Groq to Anthropic, OpenAI, or local vLLM, it requires changing a standard HTTP endpoint or provider string, not rewriting heavy abstraction chains.
+### Decision 1: Notebook-First Implementation over Complex Web/App Packages
+- **Choice**: Consolidate the entire end-to-end pipeline into `localization_workbench.ipynb` in 12 clearly numbered, sequentially executable sections. The Streamlit web app and scattered multi-file library structure (`src/`, `app/`, `eval/`) were safely archived.
+- **Rationale**:
+  - In an interview setting, having code dispersed across 15+ files forces the interviewer to switch contexts constantly and makes it harder to defend how data flows between components.
+  - A notebook allows an engineer to inspect intermediate states directly: chunk boundaries, extracted Pydantic models, raw LLM prompts, deterministic flag outputs, and evaluation metrics.
+  - It demonstrates an essential AI Generalist virtue: **knowing when a simple solution is enough** rather than over-engineering infrastructure for a task that is primarily analytical and iterative.
 
-### Decision 2: Scene & Dialogue Chunking over Fixed Token Windows
-- **Choice**: Chunk by screenplay scene headings (`SCENE 1:`, `दृश्य १:`) and dialogue blocks, rather than arbitrary token counts (e.g. 500-token sliding windows).
-- **Why**:
-  - Splitting text mid-dialogue destroys conversational beats, emotional tension, and character interaction context.
-  - Scene and dialogue boundaries match human editorial units: a reviewer evaluates an exchange or scene beat, not an arbitrary token slice.
-  - It bounds the context window naturally so the LLM concentrates on localized voice and dialect nuances without hallucinating past scene transitions.
+---
 
-### Decision 3: Upfront Glossary Extraction & Grounding
-- **Choice**: Extract characters, honorifics, and recurring terms into an editable glossary *before* adapting any chunks.
-- **Why**:
-  - The single biggest issue in long script translation is **name and persona drift** (e.g., "विक्रम" becoming "Vikram" in Scene 1, "Bikram" in Scene 3, or being translated literally as "Valor").
-  - Grounding every chunk prompt with an explicit, immutable list of target names guarantees identity continuity across 50+ scenes.
-  - Involving the reviewer early to verify target names takes 15 seconds upfront and eliminates hours of post-editing.
+### Decision 2: Direct Thin LLM Client over Heavy Frameworks (No LangChain / LlamaIndex)
+- **Choice**: Call LLM endpoints directly via standard HTTP requests (`httpx`), reading credentials and models from environment variables.
+- **Rationale**:
+  - LangChain and LlamaIndex introduce high abstraction overhead, hidden system prompts, brittle dependency trees, and breaking API changes.
+  - A thin direct client is 100% transparent: the prompt, system instructions, temperature, and JSON schema payload are explicitly visible in one cell.
+  - If a production team moves from OpenAI to Groq, Anthropic, or an on-prem vLLM instance, it requires updating a standard HTTP base URL, not re-architecting deep framework pipelines.
 
-### Decision 4: Two-Tiered QA (Cheap Deterministic First, Targeted LLM Second)
-- **Choice**: Run cheap, fast regex and string checks first (character names, numbers/dates, length ratio, untranslated script leakage), followed by a single targeted LLM call for dropped plot points and tone drift.
-- **Why**:
-  - **Cost and speed**: Deterministic checks execute in < 2ms with zero API cost and 100% precision for rule-based errors (e.g. a missing train time "11:30" or changed character name).
-  - **LLMs are poor counting engines**: Asking an LLM "are all numbers preserved?" is slow, expensive, and prone to false negatives. Regex catches missing digits deterministically.
-  - **Focused LLM utility**: The LLM is reserved only for what rules cannot do: detecting omitted physical actions and assessing conversational tone.
+---
 
-### Decision 5: Config-Driven Language Pairs (`configs/languages.yaml`)
-- **Choice**: All language pair specifics (prompts, tone notes, honorific rules, name rules, few-shot examples) live in a clean YAML configuration file.
-- **Why**:
-  - Adding or adjusting a language pair (e.g. adding Tamil -> Telugu or Bengali -> Hindi) is strictly a configuration change.
-  - Code logic in `localizer.py` and `qa_rules.py` remains language-agnostic and clean.
-  - Creative directors or dialect coaches can tune tone notes and honorific rules directly without touching Python code.
+### Decision 3: Upfront Glossary Extraction with Phonetic Alias Spelling Tolerances
+- **Choice**: Extract characters, honorifics, and key terms into a validated Pydantic glossary *before* adapting any scenes, explicitly supporting phonetic alias lists (e.g. `canonical_term: "विक्रम"`, `preferred_target: "Vikram"`, `aliases: ["Bikram", "Vicky"]`).
+- **Rationale**:
+  - The single most common failure in audio drama localization is **name drift** across episodes (e.g. *विक्रम* translated as *Valor*, or varying between *Vikram* and *Bikram* across scenes).
+  - In conversational Hinglish and Indian language subtitles, names have **no standardized Latin spelling** (e.g., *Rohan/Rohin*, *Bikram/Vikram*, *Kabir/Kabeer*).
+  - Storing approved spelling variations as aliases prevents the deterministic QA engine from generating false-positive alarms on legitimate phonetic transcriptions.
+  - Reviewers can inspect and approve the glossary in 15 seconds upfront, anchoring the LLM's chunk-by-chunk adaptation with immutable entity groundings.
 
-### Decision 6: Offline Mock Engine for Zero-Key Testing
-- **Choice**: Built-in deterministic mock provider that simulates realistic responses, translations, and QA diagnostics when no API key is provided.
-- **Why**:
-  - Ensures the consolidated unit test suite runs instantly (in ~0.14s) without relying on internet access or incurring API charges.
-  - Interviewers or reviewers can clone the repo and run `streamlit run app/streamlit_app.py` or `python run_cli.py` immediately without searching for an API key.
+---
 
-### Decision 7: What Was Left Out and Why
-- **No Vector Databases (RAG)**: Scripts are sequential narratives. Vector similarity search breaks chronological order and retrieves out-of-order chunks that destroy dramatic buildup.
-- **No Fine-Tuning**: Indian language models with fine-tuning require expensive compute, fragile maintenance, and lock the system into a static model. Prompt engineering with structured glossaries and few-shot pairs achieves superior agility.
-- **No CI / Docker Bloat**: A clean virtualenv with standard `pip install -r requirements.txt` and `pytest` runs anywhere on Python 3.11+ in seconds.
-- **No Auto-Generated User Feedback**: Metrics and ratings are not simulated or fabricated. Evaluation scripts read real human rating sheets and seeded-error answer keys.
+### Decision 4: Scene & Dialogue Chunking over Fixed Token Windows
+- **Choice**: Chunk scripts by screenplay scene headings (`SCENE 1:`, `दृश्य १:`) and dialogue boundaries, preserving stable chunk IDs (`<script_id>_scene_001`), rather than slicing text by arbitrary token counts (e.g. 500-token sliding windows).
+- **Rationale**:
+  - Splitting text mid-dialogue destroys conversational rhythm, dramatic tension, and relational context between characters.
+  - Screenplay boundaries match how human script editors and voice actors work.
+  - Providing bounded context (the immediate preceding scene) preserves conversational continuity across scene cuts without resending the entire script, keeping latency and token costs minimal.
+
+---
+
+### Decision 5: Two-Tiered QA (Deterministic Heuristics First, Targeted LLM Second)
+- **Choice**: Run ultra-fast, zero-API-cost deterministic checks first (name consistency, number/date preservation, length ratio, script leakage), followed by a single targeted LLM call for semantic checks (dropped plot points, tone drift).
+- **Rationale**:
+  - **Cost and speed**: Deterministic checks execute in < 2ms with zero API cost and 100% precision for rule-based discrepancies (e.g. missing a 24-hour deadline or a 10 lakh rupee transaction).
+  - **LLMs are poor counting engines**: Asking an LLM "are all numbers preserved?" is slow, expensive, and prone to hallucinations. Regex catches missing digits deterministically.
+  - **Clear separation of concerns**: LLMs are reserved exclusively for subjective linguistic nuances: conversational tone and dramatic beat continuity.
+
+---
+
+### Decision 6: Indic Script Word Boundaries & Same-Script Heuristics
+- **Choice**: Use Devanagari token extraction (`re.findall(r"[\u0900-\u097F]+", text)`) for word matching instead of regex `\b`, and document same-script leakage checks as weak heuristics.
+- **Technical Nuance**:
+  - In Python's standard `re` engine, Unicode combining marks (such as the Devanagari Anusvara `\u0902` in `"नहीं"`) are classified as non-spacing marks (`Mn`), not `\w`. Consequently, standard regex `\b` fails to recognize word boundaries on Indic words ending in combining characters.
+  - For cross-script pairs (e.g. Hindi to English/Hinglish), script leakage is easily caught via Unicode block checks (`[\u0900-\u097F]{4,}`).
+  - For same-script pairs (e.g. Hindi to Marathi, both Devanagari), character script checks cannot work. We use a configurable wordlist of language-specific markers (e.g., Hindi `"नहीं"`, `"लेकिन"`, `"अगर"` vs. Marathi `"नाही"`, `"पण"`, `"जर"`).
+  - **Explicit limitation**: Same-script wordlist checks are heuristic only; they can miss morphological inflections and should never be treated as definitive proof of translation error.
+
+---
+
+### Decision 7: File-Based Human Review (HTML + CSV) without Interactive Widgets
+- **Choice**: Export reviews as `review_sheet.html` (for side-by-side visual inspection with highlighted flags) and `review_decisions.csv` (for editing decisions outside Jupyter).
+- **Rationale**:
+  - Libraries like `ipywidgets` are notoriously fragile across different Jupyter distributions, notebook extensions, and headless environments.
+  - Real human reviewers (script editors, voice directors) typically do not use Jupyter Notebooks. They work in Excel, Google Sheets, or web tables.
+  - CSV export allows reviewers to work asynchronously in their preferred spreadsheet tool. The notebook then reads the completed CSV back, strictly preserving reviewer edits and approvals without overwriting unreviewed chunks.
+
+---
+
+### Decision 8: Token Usage Tracking and Avoiding Fabricated Cost Metrics
+- **Choice**: Log raw `input_tokens`, `output_tokens`, and runtime to `logs/session_logs.jsonl` per run; never hardcode dollar costs or invent adoption statistics.
+- **Rationale**:
+  - Model pricing changes constantly across providers (OpenAI, Groq, Google, Anthropic). Hardcoding prices in code produces stale or misleading financial metrics.
+  - Logging exact token counts allows financial calculations to be computed dynamically at runtime based on current vendor contracts.
+  - Fabricating synthetic benchmarks or user engagement metrics undermines engineering integrity.
+
+---
+
+### Decision 9: What Was Deliberately Left Out and Why
+- **No Vector Databases (RAG)**: Screenplays and audio dramas are strictly sequential, linear narratives. Vector similarity retrieval fetches out-of-order scenes, destroying dramatic pacing and plot continuity.
+- **No Fine-Tuning**: Fine-tuning proprietary or open-source models for multi-dialect Indian localization requires expensive compute, creates rigid model locks, and cannot easily incorporate real-time editorial glossary edits. Prompt engineering grounded by structured glossaries and few-shot examples is far more agile.
+- **No Web UI Frameworks in V1**: Prioritizing core AI reliability, evaluation rigor, and deterministic validation over frontend widget code.

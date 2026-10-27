@@ -1,5 +1,6 @@
-# Language definitions and pair-specific adaptation rules
-# Adding a new language or language pair is strictly a configuration change here.
+# Language Configuration for Kuku Localization Engine
+# Note: Initial drafted examples are marked with `needs_review: true`.
+# Replace placeholders with verified, authentic colloquial phrasing.
 
 languages:
   hindi:
@@ -27,41 +28,45 @@ pairs:
     tone_notes: >
       Conversational, urban drama tone suitable for audio/micro-drama.
       Write in Latin/Roman script using natural colloquial vocabulary common among
-      young adults in metro and tier-1 Indian cities. Avoid pure transliteration or
-      robotic grammar. Blend Hindi phrasing with natural English connectors.
+      young adults in metro and tier-1 Indian cities. Blend Hindi phrasing with natural English connectors.
     honorific_rules: >
       Preserve respect markers phonetically: 'ji' (e.g. Papaji, Chachaji),
       'sahab', 'bhaiya', 'didi'. Do not replace them with 'Mister' or drop them.
     name_rules: >
-      Character names must strictly maintain their phonetic spelling in Latin script
-      (e.g., 'विक्रम' -> 'Vikram', 'रोहित' -> 'Rohit', 'नेहा' -> 'Neha').
-      Never translate meanings of names.
+      Character names must strictly maintain phonetic spelling in Latin script
+      (e.g., 'विक्रम' -> 'Vikram', 'रोहित' -> 'Rohit'). Allow common phonetic alias variants
+      (e.g., 'Vikram' / 'Bikram' / 'Vicky'). Never translate meanings of names.
     few_shot_examples:
       - source: "विक्रम: पापाजी, मैं आज रात की ट्रेन से मुंबई निकल रहा हूँ। मुझे रोको मत।"
         adapted: "Vikram: Papaji, main aaj raat ki train se Mumbai nikal raha hoon. Please mujhe roko mat."
+        needs_review: true
+        notes: "[HUMAN REVIEWER PLACEHOLDER: Replace or verify with authentic colloquial phrasing]"
       - source: "रोहित: क्या बकवास है! तुम्हें सच में लगता है कि वो तुम्हारी मदद करेगा?"
         adapted: "Rohit: Kya bakwaas hai! Do you really think woh tumhari help karega?"
+        needs_review: true
+        notes: "[HUMAN REVIEWER PLACEHOLDER: Replace or verify with authentic colloquial phrasing]"
 
   hindi_to_english:
     source: "hindi"
     target: "english"
     display_name: "Hindi -> English"
     tone_notes: >
-      Punchy, contemporary cinematic dramatic tone. Use sharp dialogue without sounding
+      Punchy, contemporary dramatic tone. Use sharp dialogue without sounding
       overly Westernized or stilted. Preserve the emotional tension and character voice.
     honorific_rules: >
       Keep cultural honorifics when contextually vital for the character hierarchy
-      (e.g., 'Bhaiya', 'Chachaji', 'Sahab') or use close natural equivalents
-      only if the target character dynamics demand it. Never translate 'ji' to 'Sir'
-      in intimate family scenes.
+      (e.g., 'Bhaiya', 'Chachaji', 'Sahab'). Never translate intimate 'ji' to 'Sir'.
     name_rules: >
       Phonetically Romanize Indian names standardly (e.g. 'अंजली' -> 'Anjali', 'राघव' -> 'Raghav').
-      Do not anglicize Indian proper nouns.
     few_shot_examples:
       - source: "सुनीता: भैया, अगर आपने आज ये फैसला ले लिया, तो इस घर में कोई आपका साथ नहीं देगा।"
         adapted: "Sunita: Bhaiya, if you make this decision today, no one in this house will stand by you."
+        needs_review: true
+        notes: "[HUMAN REVIEWER PLACEHOLDER: Replace or verify with authentic colloquial phrasing]"
       - source: "इंस्पेक्टर शर्मा: कानून की आँखों में धूल झोंकना इतना आसान नहीं है, विक्रम।"
         adapted: "Inspector Sharma: Pulling the wool over the law's eyes isn't that easy, Vikram."
+        needs_review: true
+        notes: "[HUMAN REVIEWER PLACEHOLDER: Replace or verify with authentic colloquial phrasing]"
 
   hindi_to_marathi:
     source: "hindi"
@@ -79,8 +84,12 @@ pairs:
     few_shot_examples:
       - source: "राहुल: भैया, तुम चिंता मत करो। मैं सब संभाल लूँगा।"
         adapted: "राहुल: दादा, तू काळजी करू नकोस. मी सगळं सांभाळून घेईन."
+        needs_review: true
+        notes: "[HUMAN REVIEWER PLACEHOLDER: Verify Marathi tone and verbal idioms]"
       - source: "मीना: अगर बाबूजी को पता चला, तो वो बहुत गुस्सा होंगे।"
         adapted: "मीना: जर बाबांना समजलं, तर ते खूप रागावतील."
+        needs_review: true
+        notes: "[HUMAN REVIEWER PLACEHOLDER: Verify Marathi tone and verbal idioms]"
 
   marathi_to_hindi:
     source: "marathi"
@@ -98,8 +107,12 @@ pairs:
     few_shot_examples:
       - source: "सई: दादा, आज संध्याकाळी तू घरी लवकर येशील का?"
         adapted: "सई: भैया, आज शाम को तुम घर जल्दी आ जाओगे क्या?"
+        needs_review: true
+        notes: "[HUMAN REVIEWER PLACEHOLDER: Verify Hindi dialogue rhythm]"
       - source: "काका: हा निर्णय सोपा नाही, पण आपल्या कुटुंबासाठी आवश्यक आहे."
         adapted: "चाचाजी: यह फैसला आसान नहीं है, लेकिन हमारे परिवार के लिए ज़रूरी है।"
+        needs_review: true
+        notes: "[HUMAN REVIEWER PLACEHOLDER: Verify Hindi dialogue rhythm]"
 
   english_to_hindi:
     source: "english"
@@ -113,9 +126,13 @@ pairs:
       and hierarchy of the characters speaking.
     name_rules: >
       Transliterate English names phonetically into Devanagari
-      (e.g., 'David' -> 'डेविड', 'Maya' -> 'माया', 'Arthur' -> 'आर्थर').
+      (e.g., 'David' -> 'डेविड', 'Maya' -> 'माया').
     few_shot_examples:
       - source: "Maya: Don't you dare walk away from me, David! We are not done talking."
         adapted: "माया: मुझसे मुँह मोड़कर जाने की हिम्मत मत करना, डेविड! हमारी बात अभी खत्म नहीं हुई है।"
+        needs_review: true
+        notes: "[HUMAN REVIEWER PLACEHOLDER: Verify Hindi dubbing flow]"
       - source: "Dr. Kabir: The results are in. We only have forty-eight hours left."
         adapted: "डॉ. कबीर: रिपोर्ट आ चुकी है। हमारे पास सिर्फ अड़तालीस घंटे बचे हैं।"
+        needs_review: true
+        notes: "[HUMAN REVIEWER PLACEHOLDER: Verify Hindi dubbing flow]"
